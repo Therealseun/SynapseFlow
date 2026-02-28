@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SynapseFlow — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="icon.png" />
+<!-- Supabase client library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ... (keep all existing CSS exactly as in the original) ... */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:        #070810;
+  --sage:       #3d6b5e;
+  --sage-light: #5a8f7e;
+  --sage-pale:  #c8dcd7;
+  --amber:      #d4820a;
+  --glass:      rgba(10, 11, 20, 0.55);
+  --glass-border: rgba(255,255,255,0.09);
+  --input-bg:   rgba(255,255,255,0.06);
+  --input-border: rgba(255,255,255,0.12);
+  --text:       #e8eaf6;
+  --muted:      rgba(232,234,246,0.45);
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --radius:     14px;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: var(--text);
+  cursor: none;
+}
+
+/* ── CURSOR ── */
+.cursor {
+  position: fixed; width: 10px; height: 10px;
+  background: var(--sage-pale); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: width .18s, height .18s, background .18s;
+  mix-blend-mode: screen;
+}
+.cursor-trail {
+  position: fixed; width: 32px; height: 32px;
+  border: 1px solid rgba(200,220,215,0.35);
+  border-radius: 50%; pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+}
+.cursor.big { width: 18px; height: 18px; background: var(--amber); }
+.cursor-trail.big { width: 48px; height: 48px; }
+
+/* ── VIDEO BACKGROUND ── */
+.video-bg {
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden;
+}
+.video-bg canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+/* Cinematic dark overlay */
+.video-overlay {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, rgba(7,8,16,0.82) 0%, rgba(7,8,16,0.4) 50%, rgba(7,8,16,0.75) 100%);
+  z-index: 1;
+}
+/* Vignette */
+.video-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(7,8,16,0.9) 100%);
+  z-index: 2;
+}
+/* Scanlines */
+.video-scanlines {
+  position: absolute; inset: 0; z-index: 3;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── LAYOUT ── */
+.page {
+  position: relative; z-index: 10;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 480px;
+}
+
+/* ── LEFT PANEL (brand story) ── */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 56px;
+  position: relative;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: 0.1em;
+  color: white;
+  text-decoration: none;
+  animation: fadeUp .6s .1s both;
+}
+.logo em { color: var(--sage-pale); font-style: normal; }
+
+.left-center {
+  animation: fadeUp .7s .25s both;
+}
+.left-eyebrow {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--sage-pale);
+  opacity: .7;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.left-eyebrow::before {
+  content: '';
+  width: 28px; height: 1px;
+  background: var(--sage-pale);
+  opacity: .5;
+}
+
+.left-headline {
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 5.5vw, 5.8rem);
+  line-height: .93;
+  letter-spacing: .03em;
+  color: white;
+  margin-bottom: 28px;
+}
+.left-headline .outline {
+  -webkit-text-stroke: 1.5px rgba(255,255,255,0.35);
+  color: transparent;
+  display: block;
+}
+.left-headline .accent {
+  color: var(--sage-pale);
+  display: block;
+}
+
+.left-sub {
+  font-size: .9rem;
+  line-height: 1.75;
+  color: var(--muted);
+  max-width: 420px;
+  font-weight: 300;
+}
+
+/* Floating platform pills */
+.platform-pills {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 36px;
+  animation: fadeUp .7s .4s both;
+}
+.pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  padding: 7px 16px;
+  font-size: .72rem;
+  color: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  transition: background .2s, border-color .2s;
+  animation: pillFloat 3s ease-in-out infinite;
+}
+.pill:hover { background: rgba(61,107,94,0.2); border-color: rgba(61,107,94,0.5); color: var(--sage-pale); }
+.pill:nth-child(1) { animation-delay: 0s; }
+.pill:nth-child(2) { animation-delay: -.5s; }
+.pill:nth-child(3) { animation-delay: -1s; }
+.pill:nth-child(4) { animation-delay: -1.5s; }
+.pill:nth-child(5) { animation-delay: -2s; }
+.pill:nth-child(6) { animation-delay: -2.5s; }
+@keyframes pillFloat {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.left-footer {
+  animation: fadeUp .7s .5s both;
+}
+.trust-row {
+  display: flex; align-items: center; gap: 24px;
+}
+.trust-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .7rem; color: var(--muted);
+}
+.trust-icon {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem;
+}
+
+/* ── RIGHT PANEL (auth card) ── */
+.right-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 40px;
+  position: relative;
+}
+
+/* Glass morphism card */
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 40px 36px;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow:
+    0 40px 80px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 1px 0 rgba(255,255,255,0.1) inset;
+  animation: cardIn .7s .3s both;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle top shimmer */
+.auth-card::before {
+  content: '';
+  position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+  background: linear-gradient(to right, transparent, rgba(200,220,215,0.5), transparent);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(30px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Tab switcher */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 32px;
+  position: relative;
+}
+.tab-slider {
+  position: absolute;
+  top: 4px; bottom: 4px;
+  width: calc(50% - 4px);
+  background: var(--sage);
+  border-radius: 7px;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 2px 12px rgba(61,107,94,0.4);
+}
+.tab-slider.right { transform: translateX(calc(100% + 4px)); }
+
+.tab-btn {
+  position: relative; z-index: 1;
+  background: none; border: none;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: .82rem;
+  font-weight: 500;
+  padding: 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color .25s;
+  letter-spacing: .03em;
+}
+.tab-btn.active { color: white; }
+
+/* Forms */
+.auth-form { display: none; animation: fadeUp .3s both; }
+.auth-form.active { display: block; }
+
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+}
+.form-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-family: var(--font-body);
+  font-size: .88rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.form-input::placeholder { color: rgba(232,234,246,0.25); }
+.form-input:focus {
+  border-color: var(--sage);
+  background: rgba(61,107,94,0.08);
+  box-shadow: 0 0 0 3px rgba(61,107,94,0.15);
+}
+.form-input.error { border-color: #ff4d6d; box-shadow: 0 0 0 3px rgba(255,77,109,0.12); }
+
+/* Password field with toggle */
+.input-wrap { position: relative; }
+.input-wrap .form-input { padding-right: 44px; }
+.eye-btn {
+  position: absolute; right: 13px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  transition: color .2s;
+}
+.eye-btn:hover { color: var(--sage-pale); }
+
+/* Two column row */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Select */
+.form-select {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-family: var(--font-body);
+  font-size: .88rem;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(232,234,246,0.35)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-color: var(--input-bg);
+}
+.form-select option { background: #1a1d2e; color: var(--text); }
+.form-select:focus { border-color: var(--sage); }
+
+/* Strength meter */
+.strength-meter { margin-top: 8px; }
+.strength-bars { display: flex; gap: 4px; margin-bottom: 4px; }
+.strength-bar {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,0.08);
+  transition: background .3s;
+}
+.strength-bar.filled.weak { background: #ff4d6d; }
+.strength-bar.filled.fair { background: var(--amber); }
+.strength-bar.filled.good { background: #4ade80; }
+.strength-bar.filled.strong { background: var(--sage); }
+.strength-label { font-size: .6rem; color: var(--muted); font-family: var(--font-mono); }
+
+/* Checkbox */
+.checkbox-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 20px; margin-top: 4px;
+}
+.custom-check {
+  width: 18px; height: 18px; flex-shrink: 0;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  margin-top: 1px;
+}
+.custom-check.checked { background: var(--sage); border-color: var(--sage); }
+.custom-check svg { opacity: 0; transition: opacity .15s; }
+.custom-check.checked svg { opacity: 1; }
+.check-label {
+  font-size: .75rem;
+  color: var(--muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.check-label a { color: var(--sage-pale); text-decoration: none; border-bottom: 1px solid rgba(200,220,215,0.3); }
+.check-label a:hover { color: white; }
+
+/* Submit */
+.submit-btn {
+  width: 100%;
+  background: var(--sage);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 15px;
+  font-family: var(--font-body);
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .2s, transform .15s, box-shadow .2s;
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.submit-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform .5s;
+}
+.submit-btn:hover::after { transform: translateX(100%); }
+.submit-btn:hover { background: var(--sage-light); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(61,107,94,0.35); }
+.submit-btn:active { transform: translateY(0); }
+.submit-btn.loading { pointer-events: none; }
+.btn-spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.submit-btn.loading .btn-text { opacity: .6; }
+.submit-btn.loading .btn-spinner { display: block; }
+
+/* Divider */
+.divider {
+  display: flex; align-items: center; gap: 14px;
+  margin: 20px 0;
+  font-size: .68rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: .12em;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+/* Social auth */
+.social-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.social-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: .8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.social-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+.social-icon { font-size: 1rem; }
+
+/* Forgot password */
+.forgot-link {
+  display: block;
+  text-align: right;
+  font-size: .72rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  transition: color .2s;
+}
+.forgot-link:hover { color: var(--sage-pale); }
+
+/* Error message */
+.error-msg {
+  background: rgba(255,77,109,0.1);
+  border: 1px solid rgba(255,77,109,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: .76rem;
+  color: #ff8099;
+  margin-bottom: 16px;
+  display: none;
+  animation: shake .4s both;
+}
+.error-msg.visible { display: flex; align-items: center; gap: 8px; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%,60%{transform:translateX(-5px)}
+  40%,80%{transform:translateX(5px)}
+}
+
+/* Success state */
+.success-state {
+  display: none;
+  text-align: center;
+  padding: 20px 0;
+  animation: fadeUp .4s both;
+}
+.success-state.visible { display: block; }
+.success-ring {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: rgba(61,107,94,0.15);
+  border: 2px solid var(--sage);
+  margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  animation: successPop .5s .1s both;
+}
+@keyframes successPop {
+  from { transform: scale(0); }
+  80% { transform: scale(1.1); }
+  to { transform: scale(1); }
+}
+.success-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: .06em;
+  color: var(--sage-pale);
+  margin-bottom: 8px;
+}
+.success-sub { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+
+/* Step indicator (signup) */
+.step-dots {
+  display: flex; justify-content: center; gap: 8px;
+  margin-bottom: 24px;
+}
+.step-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background .3s, width .3s;
+}
+.step-dot.active { background: var(--sage); width: 20px; border-radius: 3px; }
+.step-dot.done { background: rgba(61,107,94,0.5); }
+
+/* Step forms */
+.step-form { display: none; animation: fadeUp .3s both; }
+.step-form.active { display: block; }
+
+.step-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: .06em;
+  color: white;
+  margin-bottom: 4px;
+}
+.step-sub { font-size: .78rem; color: var(--muted); margin-bottom: 24px; font-weight: 300; }
+
+/* Back button */
+.back-btn {
+  background: none; border: none;
+  color: var(--muted); font-family: var(--font-body);
+  font-size: .78rem; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 20px; padding: 0;
+  transition: color .2s;
+}
+.back-btn:hover { color: var(--text); }
+
+/* Card bottom note */
+.card-note {
+  text-align: center;
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: 20px;
+}
+.card-note a { color: var(--sage-pale); text-decoration: none; }
+.card-note a:hover { color: white; }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .page { grid-template-columns: 1fr; }
+  .left-panel { display: none; }
+  .right-panel { padding: 24px 20px; background: var(--ink); }
+  html, body { overflow: auto; }
+}
+
+/* Progress bar for multi-step */
+.progress-bar-wrap {
+  height: 2px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 1px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, var(--sage), var(--sage-pale));
+  border-radius: 1px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.platform-check {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  font-size: .78rem;
+  color: var(--muted);
+  user-select: none;
+}
+.platform-check.selected {
+  border-color: var(--sage);
+  background: rgba(61,107,94,0.12);
+  color: var(--sage-pale);
+}
+.platform-check-icon{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:3px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursor-trail"></div>
+
+<div class="video-bg">
+  <canvas id="bg-canvas"></canvas>
+  <div class="video-overlay"></div>
+  <div class="video-vignette"></div>
+  <div class="video-scanlines"></div>
+</div>
+
+<div class="page">
+
+  <div class="left-panel">
+    <a href="synapseflow-landing.html" class="logo">Synapse<em>Flow</em></a>
+
+    <div class="left-center">
+      <div class="left-eyebrow">Social Intelligence Platform</div>
+      <h1 class="left-headline">
+        <span class="outline">Control</span>
+        <span class="accent">Your Flow.</span>
+        Own Your Time.
+      </h1>
+      <p class="left-sub">
+        Track LinkedIn, TikTok, Instagram, X, WhatsApp and more in one place. SynapseFlow transforms your screen time data into career-aligned productivity intelligence — built for students and professionals.
+      </p>
+
+      <div class="platform-pills">
+        <div class="pill"><span class="pill-icon" style="background:#0077b5"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span>LinkedIn</div>
+        <div class="pill"><span class="pill-icon" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg></span>Instagram</div>
+        <div class="pill"><span class="pill-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg></span>TikTok</div>
+        <div class="pill"><span class="pill-icon" style="background:#000"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></span>X / Twitter</div>
+        <div class="pill"><span class="pill-icon" style="background:#25d366"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></span>WhatsApp</div>
+        <div class="pill"><span class="pill-icon" style="background:#1877f2"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span>Facebook</div>
+      </div>
+    </div>
+
+    <div class="left-footer">
+      <div class="trust-row">
+        <div class="trust-item">
+          <div class="trust-icon">🔒</div>
+          GDPR Compliant
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🛡️</div>
+          Local-first privacy
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">⚡</div>
+          Real-time insights
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="auth-card">
+
+      <div class="auth-tabs" id="auth-tabs">
+        <div class="tab-slider" id="tab-slider"></div>
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+        <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <div class="auth-form active" id="form-login">
+        <div class="error-msg" id="login-error">
+          <span>⚠</span> <span id="login-error-text">Invalid email or password.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+            <button class="eye-btn" onclick="togglePwd('login-password', this)" type="button">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot password?</a>
+
+        <button class="submit-btn" onclick="handleLogin()">
+          <span class="btn-text">Sign In to SynapseFlow</span>
+          <div class="btn-spinner"></div>
+        </button>
+
+        <div class="divider">or continue with</div>
+
+        <div class="social-btns">
+          <button class="social-btn" onclick="socialAuth('google')">
+            <span class="social-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            </span>
+            Google
+          </button>
+          <button class="social-btn" onclick="socialAuth('linkedin')">
+            <span class="social-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#0077B5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </span>
+            LinkedIn
+          </button>
+        </div>
+
+        <div class="success-state" id="login-success">
+          <div class="success-ring">✓</div>
+          <div class="success-title">Welcome Back!</div>
+          <div class="success-sub">Redirecting you to your dashboard…</div>
+        </div>
+      </div>
+
+      <div class="auth-form" id="form-signup">
+
+        <div class="step-dots" id="step-dots">
+          <div class="step-dot active" id="dot-1"></div>
+          <div class="step-dot" id="dot-2"></div>
+          <div class="step-dot" id="dot-3"></div>
+        </div>
+
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progress-fill" style="width:33%"></div>
+        </div>
+
+        <div class="step-form active" id="step-1">
+          <div class="step-title">Create Account</div>
+          <div class="step-sub">Start your productivity journey</div>
+
+          <div class="error-msg" id="signup-error-1">
+            <span>⚠</span> <span id="signup-error-1-text">Please fill all fields correctly.</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First Name</label>
+              <input class="form-input" type="text" id="s-fname" placeholder="Daniel">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input class="form-input" type="text" id="s-lname" placeholder="Smith">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" type="email" id="s-email" placeholder="you@example.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrap">
+              <input class="form-input" type="password" id="s-password" placeholder="••••••••" oninput="checkStrength(this.value)">
+              <button class="eye-btn" onclick="togglePwd('s-password', this)" type="button">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="strength-meter">
+              <div class="strength-bars">
+                <div class="strength-bar" id="sb1"></div>
+                <div class="strength-bar" id="sb2"></div>
+                <div class="strength-bar" id="sb3"></div>
+                <div class="strength-bar" id="sb4"></div>
+              </div>
+              <div class="strength-label" id="strength-label"></div>
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="nextStep(1)">
+            Continue
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="step-form" id="step-2">
+          <button class="back-btn" onclick="prevStep(2)">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            Back
+          </button>
+          <div class="step-title">Your Profile</div>
+          <div class="step-sub">Help us personalize your insights</div>
+
+          <div class="form-group">
+            <label class="form-label">Field / Discipline</label>
+            <select class="form-select" id="s-discipline">
+              <option value="" disabled selected>Select your field</option>
+              <option>Law</option>
+              <option>Medicine & Healthcare</option>
+              <option>Technology & Engineering</option>
+              <option>Business & Finance</option>
+              <option>Creative & Design</option>
+              <option>Education & Research</option>
+              <option>Marketing & Communications</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">I am a</label>
+            <select class="form-select" id="s-role">
+              <option value="" disabled selected>Student or Professional?</option>
+              <option>Student</option>
+              <option>Early-career Professional</option>
+              <option>Mid-career Professional</option>
+              <option>Freelancer / Independent</option>
+              <option>Entrepreneur</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Daily Goal (hours on social media)</label>
+            <input class="form-input" type="number" id="s-goal" placeholder="e.g. 1.5" min="0.5" max="10" step="0.5">
+          </div>
+
+          <button class="submit-btn" onclick="nextStep(2)">
+            Continue
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+
+        <div class="step-form" id="step-3">
+          <button class="back-btn" onclick="prevStep(3)">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            Back
+          </button>
+          <div class="step-title">Your Platforms</div>
+          <div class="step-sub">Select the platforms you want to track</div>
+
+          <div class="platform-grid" id="platform-grid">
+            <div class="platform-check" onclick="togglePlatform(this, 'LinkedIn')">
+              <span class="platform-check-icon" style="background:#0077b5"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span> LinkedIn
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'Instagram')">
+              <span class="platform-check-icon" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg></span> Instagram
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'TikTok')">
+              <span class="platform-check-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg></span> TikTok
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'X / Twitter')">
+              <span class="platform-check-icon" style="background:#000"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.261 5.632 5.903-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></span> X / Twitter
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'WhatsApp')">
+              <span class="platform-check-icon" style="background:#25d366"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg></span> WhatsApp
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'Facebook')">
+              <span class="platform-check-icon" style="background:#1877f2"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span> Facebook
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'Threads')">
+              <span class="platform-check-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.068c0-3.516.85-6.37 2.495-8.423C5.845 1.341 8.598.16 12.18.136h.014c3.162.022 5.63 1.03 7.335 2.997 1.698 1.96 2.561 4.72 2.561 8.2 0 3.48-.863 6.24-2.561 8.2-1.705 1.968-4.173 2.974-7.335 2.997zm.055-22.862c-2.99.022-5.282.95-6.818 2.758-1.54 1.807-2.323 4.294-2.323 7.392 0 3.097.782 5.583 2.323 7.39 1.536 1.81 3.828 2.734 6.818 2.756 2.988-.022 5.279-.946 6.815-2.756 1.54-1.807 2.323-4.293 2.323-7.39 0-3.098-.782-5.585-2.323-7.392-1.536-1.808-3.827-2.736-6.815-2.758z"/></svg></span> Threads
+            </div>
+            <div class="platform-check" onclick="togglePlatform(this, 'Snapchat')">
+              <span class="platform-check-icon" style="background:#FFFC00;filter:invert(1)"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12.166.009C9.484-.043 6.98 1.068 5.266 3.073 4.027 4.507 3.41 6.376 3.441 8.27l-.017 1.48-.73.265s.29.608.498.885c.116.154.33.306.475.389l-.112.267c-.474 1.142-1.222 2.006-2.277 2.566-.362.193-.54.385-.54.617 0 .359.42.644 1.254.844 1.012.242 1.526.477 1.699.847.088.193.072.431-.047.712-.304.717-1.105 1.2-2.153 1.587-.353.13-.489.278-.489.455 0 .267.318.549.881.716.463.138.917.183 1.21.378.24.161.334.44.376.682.123.715.48.862.91.862.261 0 .567-.084.922-.2.517-.168 1.225-.397 2.09-.397.504 0 1.04.067 1.594.214.82.218 1.6.893 2.512 1.447.565.342 1.087.48 1.587.48.5 0 1.022-.138 1.587-.48.912-.554 1.693-1.23 2.512-1.447.554-.147 1.09-.214 1.594-.214.865 0 1.573.229 2.09.397.355.116.661.2.922.2.43 0 .787-.147.91-.862.042-.242.136-.52.376-.682.293-.195.747-.24 1.21-.378.563-.167.881-.449.881-.716 0-.177-.136-.326-.489-.455-1.048-.387-1.849-.87-2.153-1.587-.119-.281-.135-.519-.047-.712.173-.37.687-.605 1.699-.847.834-.2 1.254-.485 1.254-.844 0-.232-.178-.424-.54-.617-1.055-.56-1.803-1.424-2.277-2.566l-.112-.267c.145-.083.359-.235.475-.389.208-.277.498-.885.498-.885l-.73-.265-.017-1.48C20.59 6.376 19.972 4.507 18.734 3.073 17.02 1.068 14.515-.042 12.166.009z"/></svg></span> Snapchat
+            </div>
+          </div>
+
+          <div style="margin: 16px 0 20px;">
+            <div class="checkbox-row">
+              <div class="custom-check" id="terms-check" onclick="toggleCheck('terms-check')">
+                <svg width="10" height="8" fill="none" viewBox="0 0 10 8"><path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="check-label">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I consent to usage tracking with my permission.</div>
+            </div>
+          </div>
+
+          <button class="submit-btn" onclick="handleSignup()" id="signup-final-btn">
+            <span class="btn-text">Create My Account</span>
+            <div class="btn-spinner"></div>
+          </button>
+        </div>
+
+                <div class="success-state" id="signup-success">
+          <div class="success-ring">🚀</div>
+          <div class="success-title">You're In!</div>
+          <div class="success-sub" id="signup-success-msg">Welcome to SynapseFlow. Let's optimize your digital habits.</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Initialize Supabase (replace with your credentials)
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // UI helper functions (cursor, canvas, tabs, toggle, strength) — unchanged from original
+  const cur = document.getElementById('cursor');
+  const trail = document.getElementById('cursor-trail');
+  let mx = 0, my = 0, tx = 0, ty = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  });
+  (function animTrail() {
+    tx += (mx - tx) * .13; ty += (my - ty) * .13;
+    trail.style.left = tx + 'px'; trail.style.top = ty + 'px';
+    requestAnimationFrame(animTrail);
+  })();
+  document.querySelectorAll('a,button,input,select,.platform-check,.custom-check').forEach(el => {
+    el.addEventListener('mouseenter', () => { cur.classList.add('big'); trail.classList.add('big'); });
+    el.addEventListener('mouseleave', () => { cur.classList.remove('big'); trail.classList.remove('big'); });
+  });
+
+  // Canvas background (same as original) — keep entire block
+  (function() {
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles, time = 0;
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', () => { resize(); init(); });
+    resize();
+
+    class Particle {
+      constructor() { this.reset(true); }
+      reset(rand) {
+        this.x = Math.random() * W;
+        this.y = rand ? Math.random() * H : H + 10;
+        this.size = Math.random() * 1.8 + 0.3;
+        this.speed = Math.random() * 0.4 + 0.1;
+        this.opacity = Math.random() * 0.5 + 0.1;
+        this.hue = Math.random() < 0.5 ? 160 : 40;
+        this.drift = (Math.random() - 0.5) * 0.3;
+      }
+      update() {
+        this.y -= this.speed;
+        this.x += this.drift;
+        if (this.y < -5) this.reset(false);
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${this.hue}, 50%, 70%, ${this.opacity})`;
+        ctx.fill();
+      }
+    }
+
+    class Node {
+      constructor() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.35;
+        this.vy = (Math.random() - 0.5) * 0.35;
+        this.r = Math.random() * 2 + 1;
+      }
+      update() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > W) this.vx *= -1;
+        if (this.y < 0 || this.y > H) this.vy *= -1;
+      }
+    }
+
+    let nodes, parts;
+    function init() {
+      const count = Math.floor((W * H) / 14000);
+      nodes = Array.from({ length: Math.min(count, 40) }, () => new Node());
+      parts = Array.from({ length: 120 }, () => new Particle());
+    }
+    init();
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      const bg = ctx.createRadialGradient(W * .35, H * .4, 0, W * .5, H * .5, W * .8);
+      bg.addColorStop(0, '#0d1525');
+      bg.addColorStop(0.5, '#080c18');
+      bg.addColorStop(1, '#040609');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      time += 0.004;
+      const blobs = [
+        { x: W * 0.2 + Math.sin(time) * 60, y: H * 0.3 + Math.cos(time * .7) * 40, r: 350, h: 160, s: 40, l: 18 },
+        { x: W * 0.75 + Math.cos(time * .8) * 50, y: H * 0.6 + Math.sin(time * .6) * 50, r: 280, h: 40, s: 50, l: 14 },
+        { x: W * 0.5 + Math.sin(time * 1.1) * 30, y: H * 0.15 + Math.cos(time * .9) * 30, r: 200, h: 160, s: 35, l: 12 },
+      ];
+      blobs.forEach(b => {
+        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        g.addColorStop(0, `hsla(${b.h},${b.s}%,${b.l}%,0.55)`);
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      });
+
+      nodes.forEach(n => n.update());
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxD = 160;
+          if (dist < maxD) {
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            const alpha = (1 - dist / maxD) * 0.15;
+            ctx.strokeStyle = `rgba(90,143,126,${alpha})`;
+            ctx.lineWidth = .8;
+            ctx.stroke();
+          }
+        }
+      }
+      nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(90,143,126,0.3)';
+        ctx.fill();
+      });
+
+      parts.forEach(p => { p.update(); p.draw(); });
+
+      const scanY = (time * 60) % H;
+      const scanGrad = ctx.createLinearGradient(0, scanY - 60, 0, scanY + 60);
+      scanGrad.addColorStop(0, 'transparent');
+      scanGrad.addColorStop(0.5, 'rgba(90,143,126,0.04)');
+      scanGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = scanGrad;
+      ctx.fillRect(0, scanY - 60, W, 120);
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  // Tab switching
+  function switchTab(tab) {
+    const slider = document.getElementById('tab-slider');
+    const loginForm = document.getElementById('form-login');
+    const signupForm = document.getElementById('form-signup');
+    const btnLogin = document.getElementById('tab-login');
+    const btnSignup = document.getElementById('tab-signup');
+
+    if (tab === 'login') {
+      slider.classList.remove('right');
+      btnLogin.classList.add('active');
+      btnSignup.classList.remove('active');
+      loginForm.classList.add('active');
+      signupForm.classList.remove('active');
+      document.getElementById('login-success').classList.remove('visible');
+      document.getElementById('login-error').classList.remove('visible');
+    } else {
+      slider.classList.add('right');
+      btnSignup.classList.add('active');
+      btnLogin.classList.remove('active');
+      signupForm.classList.add('active');
+      loginForm.classList.remove('active');
+    }
+  }
+
+  function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    } else {
+      inp.type = 'password';
+      btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    }
+  }
+
+  function checkStrength(val) {
+    const bars = [document.getElementById('sb1'), document.getElementById('sb2'), document.getElementById('sb3'), document.getElementById('sb4')];
+    const lbl = document.getElementById('strength-label');
+    bars.forEach(b => { b.className = 'strength-bar'; });
+
+    if (!val) { lbl.textContent = ''; return; }
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    const levels = ['', 'weak', 'fair', 'good', 'strong'];
+    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong 💪'];
+    const colors = ['', '#ff4d6d', '#d4820a', '#4ade80', '#3d6b5e'];
+
+    for (let i = 0; i < score; i++) {
+      bars[i].classList.add('filled', levels[score]);
+    }
+    lbl.textContent = labels[score];
+    lbl.style.color = colors[score];
+  }
+
+  let currentStep = 1;
+  const totalSteps = 3;
+  const selectedPlatforms = new Set();
+
+  function updateProgress(step) {
+    document.getElementById('progress-fill').style.width = (step / totalSteps * 100) + '%';
+    for (let i = 1; i <= totalSteps; i++) {
+      const dot = document.getElementById('dot-' + i);
+      dot.className = 'step-dot';
+      if (i < step) dot.classList.add('done');
+      else if (i === step) dot.classList.add('active');
+    }
+  }
+
+  function nextStep(from) {
+    if (from === 1) {
+      const fn = document.getElementById('s-fname').value.trim();
+      const ln = document.getElementById('s-lname').value.trim();
+      const em = document.getElementById('s-email').value.trim();
+      const pw = document.getElementById('s-password').value;
+      const errEl = document.getElementById('signup-error-1');
+      const errTxt = document.getElementById('signup-error-1-text');
+      if (!fn || !ln) { showError(errEl, errTxt, 'Please enter your first and last name.'); return; }
+      if (!/^\S+@\S+\.\S+$/.test(em)) { showError(errEl, errTxt, 'Please enter a valid email address.'); return; }
+      if (pw.length < 8) { showError(errEl, errTxt, 'Password must be at least 8 characters.'); return; }
+      errEl.classList.remove('visible');
+    }
+    if (from === 2) {
+      const disc = document.getElementById('s-discipline').value;
+      const role = document.getElementById('s-role').value;
+      const goal = document.getElementById('s-goal').value;
+      if (!disc || !role || !goal) {
+        alert('Please fill all fields');
+        return;
+      }
+    }
+
+    document.getElementById('step-' + from).classList.remove('active');
+    currentStep = from + 1;
+    document.getElementById('step-' + currentStep).classList.add('active');
+    updateProgress(currentStep);
+  }
+
+  function prevStep(from) {
+    document.getElementById('step-' + from).classList.remove('active');
+    currentStep = from - 1;
+    document.getElementById('step-' + currentStep).classList.add('active');
+    updateProgress(currentStep);
+  }
+
+  function showError(el, txtEl, msg) {
+    txtEl.textContent = msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 4000);
+  }
+
+  function togglePlatform(el, name) {
+    el.classList.toggle('selected');
+    if (el.classList.contains('selected')) selectedPlatforms.add(name);
+    else selectedPlatforms.delete(name);
+  }
+
+  function toggleCheck(id) {
+    document.getElementById(id).classList.toggle('checked');
+  }
+
+  // --- Supabase Authentication ---
+
+  // Sign Up
+  async function handleSignup() {
+    const termsChecked = document.getElementById('terms-check').classList.contains('checked');
+    if (!termsChecked) {
+      alert('Please agree to the Terms of Service to continue.');
+      return;
+    }
+    if (selectedPlatforms.size === 0) {
+      alert('Please select at least one platform to track.');
+      return;
+    }
+
+    const btn = document.getElementById('signup-final-btn');
+    btn.classList.add('loading');
+
+    // Gather data
+    const email = document.getElementById('s-email').value.trim();
+    const password = document.getElementById('s-password').value;
+    const firstName = document.getElementById('s-fname').value.trim();
+    const lastName = document.getElementById('s-lname').value.trim();
+    const discipline = document.getElementById('s-discipline').value;
+    const role = document.getElementById('s-role').value;
+    const goal = parseFloat(document.getElementById('s-goal').value);
+    const platforms = Array.from(selectedPlatforms);
+
+    try {
+      // 1. Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { first_name: firstName, last_name: lastName } // store in user metadata
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Signup failed');
+
+      // 2. Insert profile into 'profiles' table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authData.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          discipline,
+          role,
+          goal,
+          platforms,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (profileError) throw profileError;
+
+      // Success
+      btn.classList.remove('loading');
+      document.getElementById('step-3').classList.remove('active');
+      document.getElementById('step-dots').style.display = 'none';
+      document.querySelector('.progress-bar-wrap').style.display = 'none';
+
+      const success = document.getElementById('signup-success');
+      document.getElementById('signup-success-msg').textContent =
+        `Welcome, ${firstName}! Your account is ready. Tracking ${platforms.length} platform${platforms.length > 1 ? 's' : ''}.`;
+      success.classList.add('visible');
+      setTimeout(() => window.location.href = 'synapseflow-dashboard.html', 2200);
+
+    } catch (error) {
+      btn.classList.remove('loading');
+      alert('Signup error: ' + error.message);
+    }
+  }
+
+  // Login
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const errTxt = document.getElementById('login-error-text');
+    const btn = document.querySelector('#form-login .submit-btn');
+
+    if (!email || !password) {
+      errTxt.textContent = 'Please enter your email and password.';
+      errEl.classList.add('visible');
+      setTimeout(() => errEl.classList.remove('visible'), 3500);
+      return;
+    }
+
+    btn.classList.add('loading');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      btn.classList.remove('loading');
+      errEl.classList.remove('visible');
+      btn.style.display = 'none';
+      document.querySelector('#form-login .divider').style.display = 'none';
+      document.querySelector('#form-login .social-btns').style.display = 'none';
+      document.getElementById('login-success').classList.add('visible');
+      setTimeout(() => window.location.href = 'synapseflow-dashboard.html', 1600);
+    } catch (error) {
+      btn.classList.remove('loading');
+      errTxt.textContent = error.message;
+      errEl.classList.add('visible');
+      document.getElementById('login-email').classList.add('error');
+      document.getElementById('login-password').classList.add('error');
+      setTimeout(() => {
+        errEl.classList.remove('visible');
+        document.getElementById('login-email').classList.remove('error');
+        document.getElementById('login-password').classList.remove('error');
+      }, 3500);
+    }
+  }
+
+  // OAuth (Google, LinkedIn)
+  async function socialAuth(provider) {
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<span style="font-size:.75rem;color:var(--muted)">Connecting…</span>`;
+    btn.style.pointerEvents = 'none';
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider, // 'google' or 'linkedin'
+        options: { redirectTo: window.location.origin + '/synapseflow-dashboard.html' }
+      });
+      if (error) throw error;
+      // Redirect happens, no further action
+    } catch (error) {
+      btn.innerHTML = orig;
+      btn.style.pointerEvents = '';
+      alert('OAuth error: ' + error.message);
+    }
+  }
+
+  // Forgot password (optional - can be implemented with supabase.auth.resetPasswordForEmail)
+  async function showForgot(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    if (!email) {
+      document.getElementById('login-email').focus();
+      document.getElementById('login-error').classList.add('visible');
+      document.getElementById('login-error-text').textContent = 'Enter your email above first.';
+      setTimeout(() => document.getElementById('login-error').classList.remove('visible'), 2500);
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password.html',
+      });
+      if (error) throw error;
+      alert(`Password reset link sent to ${email}`);
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  }
+
+  // Auto-fill email if user exists in localStorage (optional)
+  window.addEventListener('load', () => {
+    const saved = JSON.parse(localStorage.getItem('synapseflow_user') || 'null');
+    if (saved && saved.email) {
+      document.getElementById('login-email').value = saved.email;
+    }
+
+    // Check if user is already logged in (session exists) and redirect
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.href = 'synapseflow-dashboard.html';
+    });
+  });
+
+  // Listen for OAuth redirect and create profile if new user
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      // Check if profile exists; if not, create a minimal one (user can complete later)
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error && error.code === 'PGRST116') { // no profile found
+        // Create a basic profile from metadata
+        const metadata = session.user.user_metadata;
+        await supabase.from('profiles').insert([{
+          id: session.user.id,
+          first_name: metadata.first_name || '',
+          last_name: metadata.last_name || '',
+          discipline: '',
+          role: '',
+          goal: 1.0,
+          platforms: [],
+        }]);
+      }
+      // Redirect will be handled by the redirectTo parameter
+    }
+  });
+</script>
+</body>
+</html>
