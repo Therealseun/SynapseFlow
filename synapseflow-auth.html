@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="icon.png" />
-<!-- Supabase client library -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase client library from Cloudflare CDN (more reliable) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/@supabase/supabase-js/2.39.7/supabase.js"></script>
 <style>
 /* ... (keep all existing CSS exactly as in the original) ... */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -461,7 +461,7 @@ html, body {
 }
 
 /* Social auth */
-.social-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.social-btns { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .social-btn {
   background: rgba(255,255,255,0.05);
   border: 1.5px solid rgba(255,255,255,0.1);
@@ -739,12 +739,7 @@ html, body {
         <div class="divider">or continue with</div>
 
         <div class="social-btns">
-          <button class="social-btn" onclick="socialAuth('google')">
-            <span class="social-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            </span>
-            Google
-          </button>
+          <!-- LinkedIn only -->
           <button class="social-btn" onclick="socialAuth('linkedin')">
             <span class="social-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#0077B5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
@@ -894,12 +889,6 @@ html, body {
             <div class="platform-check" onclick="togglePlatform(this, 'Facebook')">
               <span class="platform-check-icon" style="background:#1877f2"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span> Facebook
             </div>
-            <div class="platform-check" onclick="togglePlatform(this, 'Threads')">
-              <span class="platform-check-icon" style="background:#111"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.5 12.068c0-3.516.85-6.37 2.495-8.423C5.845 1.341 8.598.16 12.18.136h.014c3.162.022 5.63 1.03 7.335 2.997 1.698 1.96 2.561 4.72 2.561 8.2 0 3.48-.863 6.24-2.561 8.2-1.705 1.968-4.173 2.974-7.335 2.997zm.055-22.862c-2.99.022-5.282.95-6.818 2.758-1.54 1.807-2.323 4.294-2.323 7.392 0 3.097.782 5.583 2.323 7.39 1.536 1.81 3.828 2.734 6.818 2.756 2.988-.022 5.279-.946 6.815-2.756 1.54-1.807 2.323-4.293 2.323-7.39 0-3.098-.782-5.585-2.323-7.392-1.536-1.808-3.827-2.736-6.815-2.758z"/></svg></span> Threads
-            </div>
-            <div class="platform-check" onclick="togglePlatform(this, 'Snapchat')">
-              <span class="platform-check-icon" style="background:#FFFC00;filter:invert(1)"><svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12.166.009C9.484-.043 6.98 1.068 5.266 3.073 4.027 4.507 3.41 6.376 3.441 8.27l-.017 1.48-.73.265s.29.608.498.885c.116.154.33.306.475.389l-.112.267c-.474 1.142-1.222 2.006-2.277 2.566-.362.193-.54.385-.54.617 0 .359.42.644 1.254.844 1.012.242 1.526.477 1.699.847.088.193.072.431-.047.712-.304.717-1.105 1.2-2.153 1.587-.353.13-.489.278-.489.455 0 .267.318.549.881.716.463.138.917.183 1.21.378.24.161.334.44.376.682.123.715.48.862.91.862.261 0 .567-.084.922-.2.517-.168 1.225-.397 2.09-.397.504 0 1.04.067 1.594.214.82.218 1.6.893 2.512 1.447.565.342 1.087.48 1.587.48.5 0 1.022-.138 1.587-.48.912-.554 1.693-1.23 2.512-1.447.554-.147 1.09-.214 1.594-.214.865 0 1.573.229 2.09.397.355.116.661.2.922.2.43 0 .787-.147.91-.862.042-.242.136-.52.376-.682.293-.195.747-.24 1.21-.378.563-.167.881-.449.881-.716 0-.177-.136-.326-.489-.455-1.048-.387-1.849-.87-2.153-1.587-.119-.281-.135-.519-.047-.712.173-.37.687-.605 1.699-.847.834-.2 1.254-.485 1.254-.844 0-.232-.178-.424-.54-.617-1.055-.56-1.803-1.424-2.277-2.566l-.112-.267c.145-.083.359-.235.475-.389.208-.277.498-.885.498-.885l-.73-.265-.017-1.48C20.59 6.376 19.972 4.507 18.734 3.073 17.02 1.068 14.515-.042 12.166.009z"/></svg></span> Snapchat
-            </div>
           </div>
 
           <div style="margin: 16px 0 20px;">
@@ -917,7 +906,7 @@ html, body {
           </button>
         </div>
 
-                <div class="success-state" id="signup-success">
+        <div class="success-state" id="signup-success">
           <div class="success-ring">🚀</div>
           <div class="success-title">You're In!</div>
           <div class="success-sub" id="signup-success-msg">Welcome to SynapseFlow. Let's optimize your digital habits.</div>
@@ -933,7 +922,8 @@ html, body {
   // Initialize Supabase (replace with your credentials)
   const SUPABASE_URL = 'https://xbfxlzkhjvgahoiftdba.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiZnhsemtoanZnYWhvaWZ0ZGJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMTYyMjAsImV4cCI6MjA4Nzc5MjIyMH0.EYvB3cnKjJEgn-fRLeN4n255zmj0-Gt-r6DTFBS5_8I';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Use 'client' instead of 'supabase' to avoid naming conflicts
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // UI helper functions (cursor, canvas, tabs, toggle, strength) — unchanged from original
   const cur = document.getElementById('cursor');
@@ -1231,7 +1221,7 @@ html, body {
 
     try {
       // 1. Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await client.auth.signUp({
         email,
         password,
         options: {
@@ -1243,7 +1233,7 @@ html, body {
       if (!authData.user) throw new Error('Signup failed');
 
       // 2. Insert profile into 'profiles' table
-      const { error: profileError } = await supabase
+      const { error: profileError } = await client
         .from('profiles')
         .insert([{
           id: authData.user.id,
@@ -1294,7 +1284,7 @@ html, body {
     btn.classList.add('loading');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
       btn.classList.remove('loading');
@@ -1318,7 +1308,7 @@ html, body {
     }
   }
 
-  // OAuth (Google, LinkedIn)
+  // OAuth (LinkedIn only)
   async function socialAuth(provider) {
     const btn = event.currentTarget;
     const orig = btn.innerHTML;
@@ -1326,8 +1316,8 @@ html, body {
     btn.style.pointerEvents = 'none';
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider, // 'google' or 'linkedin'
+      const { error } = await client.auth.signInWithOAuth({
+        provider: provider, // 'linkedin'
         options: { redirectTo: window.location.origin + '/synapseflow-dashboard.html' }
       });
       if (error) throw error;
@@ -1339,7 +1329,7 @@ html, body {
     }
   }
 
-  // Forgot password (optional - can be implemented with supabase.auth.resetPasswordForEmail)
+  // Forgot password
   async function showForgot(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
@@ -1351,7 +1341,7 @@ html, body {
       return;
     }
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await client.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + '/reset-password.html',
       });
       if (error) throw error;
@@ -1369,16 +1359,16 @@ html, body {
     }
 
     // Check if user is already logged in (session exists) and redirect
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    client.auth.getSession().then(({ data: { session } }) => {
       if (session) window.location.href = 'synapseflow-dashboard.html';
     });
   });
 
   // Listen for OAuth redirect and create profile if new user
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  client.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
       // Check if profile exists; if not, create a minimal one (user can complete later)
-      const { data: profile, error } = await supabase
+      const { data: profile, error } = await client
         .from('profiles')
         .select('id')
         .eq('id', session.user.id)
@@ -1387,7 +1377,7 @@ html, body {
       if (error && error.code === 'PGRST116') { // no profile found
         // Create a basic profile from metadata
         const metadata = session.user.user_metadata;
-        await supabase.from('profiles').insert([{
+        await client.from('profiles').insert([{
           id: session.user.id,
           first_name: metadata.first_name || '',
           last_name: metadata.last_name || '',
