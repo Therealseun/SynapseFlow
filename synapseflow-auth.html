@@ -739,10 +739,10 @@ async function handleSignup() {
     if (authError) throw authError;
     if (!authData.user) throw new Error('Signup failed — please try again.');
 
-    const { error: profileError } = await sbClient.from('profiles').insert([{
+    const { error: profileError } = await sbClient.from('profiles').upsert({
       id: authData.user.id, first_name: firstName, last_name: lastName,
       discipline, role, goal, platforms, created_at: new Date().toISOString()
-    }]);
+    }, { onConflict: 'id' });
     if (profileError) throw profileError;
 
     btn.classList.remove('loading');
